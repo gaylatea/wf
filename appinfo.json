@@ -1,0 +1,19 @@
+{
+  "uuid": "5a5fe4ff-c1d5-4b54-8bc6-eb2bb495cef6",
+  "shortName": "wf",
+  "longName": "wf",
+  "companyName": "Sanctuary",
+  "versionLabel": "1.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["basalt"],
+  "enableMultiJS": true,
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
