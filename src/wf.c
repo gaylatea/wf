@@ -30,29 +30,48 @@
 #include <pebble.h>
 
 // Time ///////////////////////////////////////////////////////////////////////
-static TextLayer *s_time_layer;
+static TextLayer *s_time_layer_hours;
+static TextLayer *s_time_layer_minutes;
 
 static void time_layer_update(struct tm *tick_time, TimeUnits changed) {
   // Draw logic for the time display.
-  static char s_time_buffer[8];
-  strftime(s_time_buffer, sizeof(s_time_buffer),
-           clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
-  text_layer_set_text(s_time_layer, s_time_buffer);
+  static char s_time_buffer_hours[4];
+  strftime(s_time_buffer_hours, sizeof(s_time_buffer_hours),
+           clock_is_24h_style() ? "%H:" : "%I:", tick_time);
+  text_layer_set_text(s_time_layer_hours, s_time_buffer_hours);
+
+  static char s_time_buffer_minutes[3];
+  strftime(s_time_buffer_minutes, sizeof(s_time_buffer_minutes),
+      "%M", tick_time);
+  text_layer_set_text(s_time_layer_minutes, s_time_buffer_minutes);
 }
 
 static void time_layer_create(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  s_time_layer = text_layer_create(GRect(0, 90, bounds.size.w, 40));
+  int midpoint = (int)(bounds.size.w/2);
+  
+  s_time_layer_hours = text_layer_create(GRect(0, 87, midpoint, 43));
 
-  text_layer_set_background_color(s_time_layer, GColorBlack);
-  text_layer_set_text_color(s_time_layer, GColorWhite);
-  text_layer_set_text(s_time_layer, "00:00");
-  text_layer_set_font(s_time_layer,
-                      fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS));
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+  text_layer_set_background_color(s_time_layer_hours, GColorBlack);
+  text_layer_set_text_color(s_time_layer_hours, GColorWhite);
+  text_layer_set_text(s_time_layer_hours, "00:");
+  text_layer_set_font(s_time_layer_hours,
+                      fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+  text_layer_set_text_alignment(s_time_layer_hours, GTextAlignmentRight);
 
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_time_layer_hours));
+
+  s_time_layer_minutes = text_layer_create(GRect(midpoint+1, 87, midpoint - 1, 43));
+
+  text_layer_set_background_color(s_time_layer_minutes, GColorBlack);
+  text_layer_set_text_color(s_time_layer_minutes, GColorWhite);
+  text_layer_set_text(s_time_layer_minutes, "00");
+  text_layer_set_font(s_time_layer_minutes,
+                      fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
+  text_layer_set_text_alignment(s_time_layer_minutes, GTextAlignmentLeft);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_time_layer_minutes));
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
@@ -61,7 +80,10 @@ static void time_layer_create(Window *window) {
   tick_timer_service_subscribe(MINUTE_UNIT, time_layer_update);
 }
 
-static void time_layer_destroy() { text_layer_destroy(s_time_layer); }
+static void time_layer_destroy() {
+  text_layer_destroy(s_time_layer_hours);
+  text_layer_destroy(s_time_layer_minutes);
+}
 
 // Battery Monitoring /////////////////////////////////////////////////////////
 // We store the full battery state instead of just the level, because we want
@@ -121,6 +143,11 @@ static void battery_layer_create(Window *window) {
 }
 
 static void battery_layer_destroy() { layer_destroy(s_battery_layer); }
+
+// Traffic Information ////////////////////////////////////////////////////////
+// Displays travel-time (with traffic) to two configured locations, with the
+// help of Google Maps API. Used to tell how bad commute traffic is at present.
+
 
 // Main Window ////////////////////////////////////////////////////////////////
 static Window *s_main_window;
