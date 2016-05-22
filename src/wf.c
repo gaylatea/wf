@@ -30,48 +30,30 @@
 #include <pebble.h>
 
 // Time ///////////////////////////////////////////////////////////////////////
-static TextLayer *s_time_layer_hours;
-static TextLayer *s_time_layer_minutes;
+static TextLayer *s_time_layer;
 
 static void time_layer_update(struct tm *tick_time, TimeUnits changed) {
   // Draw logic for the time display.
-  static char s_time_buffer_hours[4];
-  strftime(s_time_buffer_hours, sizeof(s_time_buffer_hours),
-           clock_is_24h_style() ? "%H:" : "%I:", tick_time);
-  text_layer_set_text(s_time_layer_hours, s_time_buffer_hours);
-
-  static char s_time_buffer_minutes[3];
-  strftime(s_time_buffer_minutes, sizeof(s_time_buffer_minutes),
-      "%M", tick_time);
-  text_layer_set_text(s_time_layer_minutes, s_time_buffer_minutes);
+  static char s_time_buffer[6];
+  strftime(s_time_buffer, sizeof(s_time_buffer),
+           clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+  text_layer_set_text(s_time_layer, s_time_buffer);
 }
 
 static void time_layer_create(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  int midpoint = (int)(bounds.size.w/2);
-  
-  s_time_layer_hours = text_layer_create(GRect(0, 87, midpoint, 43));
 
-  text_layer_set_background_color(s_time_layer_hours, GColorBlack);
-  text_layer_set_text_color(s_time_layer_hours, GColorWhite);
-  text_layer_set_text(s_time_layer_hours, "00:");
-  text_layer_set_font(s_time_layer_hours,
+  s_time_layer = text_layer_create(GRect(14, 82, (bounds.size.w - 28), 43));
+
+  text_layer_set_background_color(s_time_layer, GColorBlack);
+  text_layer_set_text_color(s_time_layer, GColorWhite);
+  text_layer_set_text(s_time_layer, "00:00");
+  text_layer_set_font(s_time_layer,
                       fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  text_layer_set_text_alignment(s_time_layer_hours, GTextAlignmentRight);
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer_hours));
-
-  s_time_layer_minutes = text_layer_create(GRect(midpoint+1, 87, midpoint - 1, 43));
-
-  text_layer_set_background_color(s_time_layer_minutes, GColorBlack);
-  text_layer_set_text_color(s_time_layer_minutes, GColorWhite);
-  text_layer_set_text(s_time_layer_minutes, "00");
-  text_layer_set_font(s_time_layer_minutes,
-                      fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
-  text_layer_set_text_alignment(s_time_layer_minutes, GTextAlignmentLeft);
-
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer_minutes));
+  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
@@ -80,10 +62,7 @@ static void time_layer_create(Window *window) {
   tick_timer_service_subscribe(MINUTE_UNIT, time_layer_update);
 }
 
-static void time_layer_destroy() {
-  text_layer_destroy(s_time_layer_hours);
-  text_layer_destroy(s_time_layer_minutes);
-}
+static void time_layer_destroy() { text_layer_destroy(s_time_layer); }
 
 // Battery Monitoring /////////////////////////////////////////////////////////
 // We store the full battery state instead of just the level, because we want
@@ -124,10 +103,6 @@ static void battery_layer_update_proc(Layer *layer, GContext *ctx) {
   }
   graphics_context_set_fill_color(ctx, battery_display_color);
   graphics_fill_rect(ctx, GRect(0, 0, width, 2), 0, GCornerNone);
-
-  // Draw a small line under the battery indicator for reference.
-  graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_fill_rect(ctx, GRect(0, 3, bounds.size.w, 1), 0, GCornerNone);
 }
 
 static void battery_layer_create(Window *window) {
@@ -147,7 +122,74 @@ static void battery_layer_destroy() { layer_destroy(s_battery_layer); }
 // Traffic Information ////////////////////////////////////////////////////////
 // Displays travel-time (with traffic) to two configured locations, with the
 // help of Google Maps API. Used to tell how bad commute traffic is at present.
+static TextLayer *s_location_1_layer;
+static TextLayer *s_location_2_layer;
 
+static void location_layer_create(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+  int midpoint = (int)(bounds.size.w / 2);
+
+  s_location_1_layer =
+      text_layer_create(GRect(14, 141, (midpoint - 14 - 2), 25));
+
+  text_layer_set_background_color(s_location_1_layer, GColorBlack);
+  text_layer_set_text_color(s_location_1_layer, GColorWhite);
+  text_layer_set_text(s_location_1_layer, "1000 min");
+  text_layer_set_font(s_location_1_layer,
+                      fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_location_1_layer, GTextAlignmentCenter);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_location_1_layer));
+
+  s_location_2_layer =
+      text_layer_create(GRect(midpoint + 1, 141, midpoint - 14 - 1, 25));
+
+  text_layer_set_background_color(s_location_2_layer, GColorBlack);
+  text_layer_set_text_color(s_location_2_layer, GColorWhite);
+  text_layer_set_text(s_location_2_layer, "1000 min");
+  text_layer_set_font(s_location_2_layer,
+                      fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_location_2_layer, GTextAlignmentCenter);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_location_2_layer));
+}
+
+static void location_layer_destroy() {
+  text_layer_destroy(s_location_1_layer);
+  text_layer_destroy(s_location_2_layer);
+}
+
+// Ornamentation Layer ////////////////////////////////////////////////////////
+// This layer is static, and contains UI elements not associated with any
+// dynamic part of the watchface.
+static Layer *s_ornamentation_layer;
+
+static void ornamentation_layer_update_proc(Layer *layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(layer);
+  int midpoint = (int)(bounds.size.w / 2);
+
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_fill_rect(ctx, GRect(1, 0, bounds.size.w, 1), 0, GCornerNone);
+  graphics_fill_rect(ctx, GRect(midpoint, 0, 1, bounds.size.h), 0, GCornerNone);
+}
+
+static void ornamentation_layer_create(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+
+  s_ornamentation_layer = layer_create(
+      GRect(13, 140, bounds.size.w - 27, bounds.size.h - 135 - 14));
+  layer_set_update_proc(s_ornamentation_layer, ornamentation_layer_update_proc);
+  layer_add_child(window_layer, s_ornamentation_layer);
+
+  // Make sure this gets drawn after setup.
+  layer_mark_dirty(s_ornamentation_layer);
+}
+
+static void ornamentation_layer_destroy() {
+  layer_destroy(s_ornamentation_layer);
+}
 
 // Main Window ////////////////////////////////////////////////////////////////
 static Window *s_main_window;
@@ -157,13 +199,17 @@ static void main_window_load(Window *window) {
   window_set_background_color(window, GColorBlack);
 
   // Create the layers needed to display the watchface information.
+  ornamentation_layer_create(window);
   time_layer_create(window);
   battery_layer_create(window);
+  location_layer_create(window);
 }
 
 static void main_window_unload(Window *window) {
+  ornamentation_layer_destroy();
   time_layer_destroy();
   battery_layer_destroy();
+  location_layer_destroy();
 }
 
 // Helper Functions ///////////////////////////////////////////////////////////
