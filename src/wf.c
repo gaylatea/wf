@@ -44,7 +44,7 @@ static void time_layer_create(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  s_time_layer = text_layer_create(GRect(14, 82, (bounds.size.w - 28), 43));
+  s_time_layer = text_layer_create(GRect(9, 62, (bounds.size.w - 18), 43));
 
   text_layer_set_background_color(s_time_layer, GColorBlack);
   text_layer_set_text_color(s_time_layer, GColorWhite);
@@ -63,6 +63,41 @@ static void time_layer_create(Window *window) {
 }
 
 static void time_layer_destroy() { text_layer_destroy(s_time_layer); }
+
+// Date Display ///////////////////////////////////////////////////////////////
+// Turns out this is useful to have on a watchface. Who would have guessed.
+static TextLayer *s_date_layer;
+
+static void date_layer_update(struct tm *tick_time, TimeUnits changed) {
+  // Draw logic for the time display.
+  static char s_date_buffer[12];
+  strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %d", tick_time);
+  text_layer_set_text(s_date_layer, s_date_buffer);
+}
+
+static void date_layer_create(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+
+  s_date_layer = text_layer_create(GRect(14, 107, (bounds.size.w - 28), 20));
+
+  text_layer_set_background_color(s_date_layer, GColorBlack);
+  text_layer_set_text_color(s_date_layer, GColorWhite);
+  text_layer_set_text(s_date_layer, "Sat May 21");
+  text_layer_set_font(s_date_layer,
+                      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+
+  time_t temp = time(NULL);
+  struct tm *tick_time = localtime(&temp);
+  date_layer_update(tick_time, DAY_UNIT);
+
+  tick_timer_service_subscribe(DAY_UNIT, date_layer_update);
+}
+
+static void date_layer_destroy() { text_layer_destroy(s_date_layer); }
 
 // Battery Monitoring /////////////////////////////////////////////////////////
 // We store the full battery state instead of just the level, because we want
@@ -201,6 +236,7 @@ static void main_window_load(Window *window) {
   // Create the layers needed to display the watchface information.
   ornamentation_layer_create(window);
   time_layer_create(window);
+  date_layer_create(window);
   battery_layer_create(window);
   location_layer_create(window);
 }
@@ -208,6 +244,7 @@ static void main_window_load(Window *window) {
 static void main_window_unload(Window *window) {
   ornamentation_layer_destroy();
   time_layer_destroy();
+  date_layer_destroy();
   battery_layer_destroy();
   location_layer_destroy();
 }
