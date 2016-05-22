@@ -5,13 +5,23 @@
   "companyName": "Sanctuary",
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": ["basalt"],
+  "targetPlatforms": ["basalt", "chalk"],
   "enableMultiJS": true,
   "watchapp": {
     "watchface": true
   },
+  "capabilities": [
+    "location",
+    "configurable"
+  ],
   "appKeys": {
-    "dummy": 0
+    "AppKeyLocation1Time": 0,
+    "AppKeyLocation2Time": 1,
+    "apikey": 2,
+    "l1long": 3,
+    "l1lat": 4,
+    "l2long": 5,
+    "l2lat": 6
   },
   "resources": {
     "media": []

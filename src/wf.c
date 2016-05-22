@@ -29,10 +29,14 @@
  */
 #include <pebble.h>
 
+// AppMessage Keys ////////////////////////////////////////////////////////////
+#define KEY_LOCATION_1_TIME 0
+#define KEY_LOCATION_2_TIME 1
+
 // Time ///////////////////////////////////////////////////////////////////////
 static TextLayer *s_time_layer;
 
-static void time_layer_update(struct tm *tick_time, TimeUnits changed) {
+static void time_layer_update(struct tm *tick_time) {
   // Draw logic for the time display.
   static char s_time_buffer[6];
   strftime(s_time_buffer, sizeof(s_time_buffer),
@@ -57,9 +61,7 @@ static void time_layer_create(Window *window) {
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
-  time_layer_update(tick_time, MINUTE_UNIT);
-
-  tick_timer_service_subscribe(MINUTE_UNIT, time_layer_update);
+  time_layer_update(tick_time);
 }
 
 static void time_layer_destroy() { text_layer_destroy(s_time_layer); }
@@ -68,7 +70,7 @@ static void time_layer_destroy() { text_layer_destroy(s_time_layer); }
 // Turns out this is useful to have on a watchface. Who would have guessed.
 static TextLayer *s_date_layer;
 
-static void date_layer_update(struct tm *tick_time, TimeUnits changed) {
+static void date_layer_update(struct tm *tick_time) {
   // Draw logic for the time display.
   static char s_date_buffer[12];
   strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %d", tick_time);
@@ -92,9 +94,7 @@ static void date_layer_create(Window *window) {
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
-  date_layer_update(tick_time, DAY_UNIT);
-
-  tick_timer_service_subscribe(DAY_UNIT, date_layer_update);
+  date_layer_update(tick_time);
 }
 
 static void date_layer_destroy() { text_layer_destroy(s_date_layer); }
@@ -160,6 +160,9 @@ static void battery_layer_destroy() { layer_destroy(s_battery_layer); }
 static TextLayer *s_location_1_layer;
 static TextLayer *s_location_2_layer;
 
+static char s_location_1_buffer[9];
+static char s_location_2_buffer[9];
+
 static void location_layer_create(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -170,7 +173,7 @@ static void location_layer_create(Window *window) {
 
   text_layer_set_background_color(s_location_1_layer, GColorBlack);
   text_layer_set_text_color(s_location_1_layer, GColorWhite);
-  text_layer_set_text(s_location_1_layer, "1000 min");
+  text_layer_set_text(s_location_1_layer, "Home");
   text_layer_set_font(s_location_1_layer,
                       fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_location_1_layer, GTextAlignmentCenter);
@@ -182,7 +185,7 @@ static void location_layer_create(Window *window) {
 
   text_layer_set_background_color(s_location_2_layer, GColorBlack);
   text_layer_set_text_color(s_location_2_layer, GColorWhite);
-  text_layer_set_text(s_location_2_layer, "1000 min");
+  text_layer_set_text(s_location_2_layer, "Work");
   text_layer_set_font(s_location_2_layer,
                       fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_location_2_layer, GTextAlignmentCenter);
@@ -190,9 +193,40 @@ static void location_layer_create(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_location_2_layer));
 }
 
+static void location_layer_update(int location_1_time, int location_2_time) {
+  snprintf(s_location_1_buffer, sizeof(s_location_1_buffer), "%d min", location_1_time);
+  text_layer_set_text(s_location_1_layer, s_location_1_buffer);
+  snprintf(s_location_2_buffer, sizeof(s_location_2_buffer), "%d min", location_2_time);
+  text_layer_set_text(s_location_2_layer, s_location_2_buffer);
+}
+
 static void location_layer_destroy() {
   text_layer_destroy(s_location_1_layer);
   text_layer_destroy(s_location_2_layer);
+}
+
+// Phone Interaction //////////////////////////////////////////////////////////
+// Routing for messages coming from the phone.
+static void inbox_received_callback(DictionaryIterator* iterator, void* ctx) {
+  Tuple* location_1_tuple = dict_find(iterator, KEY_LOCATION_1_TIME);
+  Tuple* location_2_tuple = dict_find(iterator, KEY_LOCATION_2_TIME);
+
+  // Only update if we have both pieces of data.
+  if(location_1_tuple && location_2_tuple) {
+    location_layer_update((int)location_1_tuple->value->int32, (int)location_2_tuple->value->int32);
+  }
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 // Ornamentation Layer ////////////////////////////////////////////////////////
@@ -214,7 +248,7 @@ static void ornamentation_layer_create(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   s_ornamentation_layer = layer_create(
-      GRect(13, 140, bounds.size.w - 27, bounds.size.h - 135 - 14));
+      GRect(13, 140, bounds.size.w - 27, bounds.size.h - 135 - 13));
   layer_set_update_proc(s_ornamentation_layer, ornamentation_layer_update_proc);
   layer_add_child(window_layer, s_ornamentation_layer);
 
@@ -229,6 +263,11 @@ static void ornamentation_layer_destroy() {
 // Main Window ////////////////////////////////////////////////////////////////
 static Window *s_main_window;
 
+static void main_time_update_multiplexer(struct tm *tick, TimeUnits units) {
+  if(units & MINUTE_UNIT) { time_layer_update(tick); }
+  if(units & DAY_UNIT) { date_layer_update(tick); }
+}
+
 static void main_window_load(Window *window) {
   // Always default to a black background.
   window_set_background_color(window, GColorBlack);
@@ -239,6 +278,8 @@ static void main_window_load(Window *window) {
   date_layer_create(window);
   battery_layer_create(window);
   location_layer_create(window);
+
+  tick_timer_service_subscribe(MINUTE_UNIT, main_time_update_multiplexer);
 }
 
 static void main_window_unload(Window *window) {
@@ -256,6 +297,15 @@ static void init() {
       s_main_window,
       (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
   window_stack_push(s_main_window, true);
+
+app_message_register_inbox_received(inbox_received_callback);
+app_message_register_inbox_dropped(inbox_dropped_callback);
+app_message_register_outbox_failed(outbox_failed_callback);
+app_message_register_outbox_sent(outbox_sent_callback);
+
+const int inbox_size = 128;
+const int outbox_size = 128;
+app_message_open(inbox_size, outbox_size);
 }
 
 static void deinit() { window_destroy(s_main_window); }
