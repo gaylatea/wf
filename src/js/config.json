@@ -1,63 +1,43 @@
-[
-  {
-    "type": "heading",
-    "defaultValue": "wf Configuration"
-  },
-  {
-    "type": "section",
-    "items": [
-      {
-        "type": "heading",
-        "defaultValue": "APIs"
-      },
-      {
-        "type": "input",
-        "label": "Google Maps API Key",
-        "appKey": "apikey"
-      }
-    ]
-  },
-  {
-    "type": "section",
-    "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Locations"
-      },
-      {
-        "type": "section",
-        "items": [
-          {
-            "type": "input",
-            "label": "Location 1 Longitude",
-            "appKey": "l1long"
-          },
-          {
-            "type": "input",
-            "label": "Location 1 Latitude",
-            "appKey": "l1lat"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "items": [
-          {
-            "type": "input",
-            "label": "Location 2 Longitude",
-            "appKey": "l2long"
-          },
-          {
-            "type": "input",
-            "label": "Location 2 Latitude",
-            "appKey": "l2lat"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "type": "submit",
-    "defaultValue": "Save"
-  }
-]
+[{"type" : "heading", "defaultValue" : "wf Configuration"}, {
+  "type" : "section",
+  "items" : [
+    {"type" : "heading", "defaultValue" : "APIs"},
+    {"type" : "input", "label" : "Google Maps API Key", "appKey" : "apikey"}
+  ]
+},
+ {
+   "type" : "section",
+   "items" : [
+     {"type" : "heading", "defaultValue" : "Locations"}, {
+       "type" : "section",
+       "items" : [
+         {
+           "type" : "input",
+           "label" : "Location 1 Longitude",
+           "appKey" : "l1long"
+         },
+         {
+           "type" : "input",
+           "label" : "Location 1 Latitude",
+           "appKey" : "l1lat"
+         }
+       ]
+     },
+     {
+       "type" : "section",
+       "items" : [
+         {
+           "type" : "input",
+           "label" : "Location 2 Longitude",
+           "appKey" : "l2long"
+         },
+         {
+           "type" : "input",
+           "label" : "Location 2 Latitude",
+           "appKey" : "l2lat"
+         }
+       ]
+     }
+   ]
+ },
+ {"type" : "submit", "defaultValue" : "Save"}]

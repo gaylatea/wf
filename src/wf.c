@@ -194,9 +194,11 @@ static void location_layer_create(Window *window) {
 }
 
 static void location_layer_update(int location_1_time, int location_2_time) {
-  snprintf(s_location_1_buffer, sizeof(s_location_1_buffer), "%d min", location_1_time);
+  snprintf(s_location_1_buffer, sizeof(s_location_1_buffer), "%d min",
+           location_1_time);
   text_layer_set_text(s_location_1_layer, s_location_1_buffer);
-  snprintf(s_location_2_buffer, sizeof(s_location_2_buffer), "%d min", location_2_time);
+  snprintf(s_location_2_buffer, sizeof(s_location_2_buffer), "%d min",
+           location_2_time);
   text_layer_set_text(s_location_2_layer, s_location_2_buffer);
 }
 
@@ -207,13 +209,14 @@ static void location_layer_destroy() {
 
 // Phone Interaction //////////////////////////////////////////////////////////
 // Routing for messages coming from the phone.
-static void inbox_received_callback(DictionaryIterator* iterator, void* ctx) {
-  Tuple* location_1_tuple = dict_find(iterator, KEY_LOCATION_1_TIME);
-  Tuple* location_2_tuple = dict_find(iterator, KEY_LOCATION_2_TIME);
+static void inbox_received_callback(DictionaryIterator *iterator, void *ctx) {
+  Tuple *location_1_tuple = dict_find(iterator, KEY_LOCATION_1_TIME);
+  Tuple *location_2_tuple = dict_find(iterator, KEY_LOCATION_2_TIME);
 
   // Only update if we have both pieces of data.
-  if(location_1_tuple && location_2_tuple) {
-    location_layer_update((int)location_1_tuple->value->int32, (int)location_2_tuple->value->int32);
+  if (location_1_tuple && location_2_tuple) {
+    location_layer_update((int)location_1_tuple->value->int32,
+                          (int)location_2_tuple->value->int32);
   }
 }
 
@@ -221,7 +224,8 @@ static void inbox_dropped_callback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
 }
 
-static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+static void outbox_failed_callback(DictionaryIterator *iterator,
+                                   AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
 }
 
@@ -264,8 +268,12 @@ static void ornamentation_layer_destroy() {
 static Window *s_main_window;
 
 static void main_time_update_multiplexer(struct tm *tick, TimeUnits units) {
-  if(units & MINUTE_UNIT) { time_layer_update(tick); }
-  if(units & DAY_UNIT) { date_layer_update(tick); }
+  if (units & MINUTE_UNIT) {
+    time_layer_update(tick);
+  }
+  if (units & DAY_UNIT) {
+    date_layer_update(tick);
+  }
 }
 
 static void main_window_load(Window *window) {
@@ -298,14 +306,14 @@ static void init() {
       (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
   window_stack_push(s_main_window, true);
 
-app_message_register_inbox_received(inbox_received_callback);
-app_message_register_inbox_dropped(inbox_dropped_callback);
-app_message_register_outbox_failed(outbox_failed_callback);
-app_message_register_outbox_sent(outbox_sent_callback);
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
 
-const int inbox_size = 128;
-const int outbox_size = 128;
-app_message_open(inbox_size, outbox_size);
+  const int inbox_size = 128;
+  const int outbox_size = 128;
+  app_message_open(inbox_size, outbox_size);
 }
 
 static void deinit() { window_destroy(s_main_window); }
